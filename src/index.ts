@@ -25,66 +25,57 @@ export class GouqiBase extends Service {
     super(ctx, 'gouqi_base', true)
   }
 
-  async downloadImageAsBase64(ctx, url, headers = {}) {
-    const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", , "image/gif"];
+  async downloadImageAsBase64(url, headers = {}) {
+    const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
     //10M
     const MAX_CONTENT_SIZE = 10485760;
-    const image = await ctx.http(url, { responseType: "arraybuffer", headers });
-    if (+image.headers.get("content-length") > MAX_CONTENT_SIZE) {
+    
+    // 将返回值命名为 response，使其更清晰
+    const response = await this.ctx.http(url, { responseType: "arraybuffer", headers });
+
+    if (+response.headers.get("content-length") > MAX_CONTENT_SIZE) {
       throw new Error(".file-too-large");
     }
-    const mimetype = image.headers.get("content-type");
+    const mimetype = response.headers.get("content-type");
     if (!ALLOWED_TYPES.includes(mimetype)) {
       throw new Error(".unsupported-file-type");
     }
-    const buffer = image.data;
+    const buffer = Buffer.from(response.data); // 确保是 Buffer 类型
     const base64 = arrayBufferToBase64(buffer);
     return { buffer, base64, dataUrl: `data:${mimetype};base64,${base64}` };
   }
-  hasSensitiveWords(text) {
-    const lowercaseText = text.toLowerCase();
+
+  hasSensitiveWords(input) {
+    // 敏感词列表
     const nsfwKeywords = [
-      "nsfw",
-      "nude",
-      "porn",
-      "hentai",
-      "ecchi",
-      "gore",
-      "violence",
-      "rape",
-      "incest",
-      "pedophile",
-      "pussy",
-      "cock",
-      "dick",
-      "vagina",
-      "penis",
-      "ass",
-      "boobs",
-      "tits",
-      "cum",
-      "anal",
-      "masturbation",
+      "nsfw", "nude", "porn", "hentai", "ecchi", "gore", "violence",
+      "rape", "incest", "pedophile", "pussy", "cock", "dick",
+      "vagina", "penis", "ass", "boobs", "tits", "cum", "anal",
+      "masturbation"
       //  ... 这里可以添加更多你认为相关的关键词 ...
     ];
-    for (const keyword of nsfwKeywords) {
-      if (lowercaseText.includes(keyword)) {
-        return true;
-      }
-    }
-    return false;
+  
+    // 动态创建一个正则表达式：
+    // - nsfwKeywords.join('|') 会生成一个 "nsfw|nude|porn|..." 的字符串，表示匹配其中任意一个词。
+    // - \b 是单词边界，确保我们匹配的是整个单词，而不是单词的一部分。
+    // - 'i' 标志表示不区分大小写进行匹配。
+    const regex = new RegExp(`\\b(${nsfwKeywords.join('|')})\\b`, 'i');
+  
+    // 使用 regex.test() 来检查输入字符串是否匹配该模式。
+    // .test() 方法性能很好，一旦找到匹配项就会立即返回 true。
+    return regex.test(input);
   }
 
-  getImage64Dimensions(base64String) {
+  getImage64Dimensions(base64String: string) {
     // 移除数据 URI 前缀
     const base64Data = base64String.replace(/^data:image\/\w+;base64,/, '');
-    // 将 Base64 字符串转换为 Buffer
     const imageBuffer = Buffer.from(base64Data, 'base64');
     try {
       const dimensions = imageSize(imageBuffer);
       return { width: dimensions.width, height: dimensions.height };
     } catch (error) {
       this.ctx.logger.warn('无法获取图片尺寸:', error);
+      return null;
     }
   }
 
