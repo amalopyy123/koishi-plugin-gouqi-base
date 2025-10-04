@@ -29,7 +29,7 @@ export class GouqiBase extends Service {
     const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
     //10M
     const MAX_CONTENT_SIZE = 10485760;
-    
+
     // 将返回值命名为 response，使其更清晰
     const response = await this.ctx.http(url, { responseType: "arraybuffer", headers });
 
@@ -54,13 +54,13 @@ export class GouqiBase extends Service {
       "masturbation"
       //  ... 这里可以添加更多你认为相关的关键词 ...
     ];
-  
+
     // 动态创建一个正则表达式：
     // - nsfwKeywords.join('|') 会生成一个 "nsfw|nude|porn|..." 的字符串，表示匹配其中任意一个词。
     // - \b 是单词边界，确保我们匹配的是整个单词，而不是单词的一部分。
     // - 'i' 标志表示不区分大小写进行匹配。
     const regex = new RegExp(`\\b(${nsfwKeywords.join('|')})\\b`, 'i');
-  
+
     // 使用 regex.test() 来检查输入字符串是否匹配该模式。
     // .test() 方法性能很好，一旦找到匹配项就会立即返回 true。
     return regex.test(input);
@@ -97,5 +97,65 @@ export class GouqiBase extends Service {
     } catch (error) {
       this.ctx.logger.warn('图片尺寸调整失败:', error);
     }
+  }
+  async translate_yd(input: any) {
+    //return 'xxx';
+    try {
+      if (h.select(input, 'img').length) {
+        throw new Error("不允许输入图片");
+      }
+      let textList = h.select(input, 'text').map((item) => h.text(item.attrs.content));
+      let textInput = '';
+      textList.map(item => { textInput += item.attrs.content });
+      const base64Url = 'aHR0cHM6Ly9hcGkuNTJ2bXkuY24vYXBpL3F1ZXJ5L2ZhbnlpL3lvdWRhbw==';
+      //url后面不带问号
+      const bufferDecode = Buffer.from(base64Url, 'base64');
+      const decodedString = bufferDecode.toString('utf8');
+      const url = new URL(decodedString);
+      url.searchParams.set('msg', '\'' + textInput + '\'');
+      //发送url.toString()，也无法翻译一些特殊符号（例如“&”）
+      //console.log(url.toString());
+      const res = await this.ctx.http.get(
+        //url.toString()
+        decodedString + "?msg=" + textInput
+      );
+      //console.log(res)
+      //{ code: 200, msg: '成功', data: { source: '魅魔化', target: 'Succubus transformation' } }
+      if (res.code == 200 && res.msg == '成功') {
+        return res.data.target;
+      } else {
+        this.ctx.logger.info(res);
+        throw new Error("请查看日志");
+      }
+    } catch (error) {
+      return `Failed to translate, error: ${error.message}`;
+    }
+  }
+  getMergedText(input) {
+    let textList = h.select(input, 'text').map((item) => h.text(item.attrs.content));
+    let textMerged = '';
+    textList.map(item => { textMerged += item.attrs.content });
+    //console.log(textList);
+    // [
+    //   Element { type: 'text', attrs: { content: '马斯里 ' }, children: [] },
+    //   Element { type: 'text', attrs: { content: ' 玛丽苏' }, children: [] }
+    // ]
+    return textMerged;
+  }
+  getImgList(input){
+    let imgList = h.select(input, 'img').map((item) => h.image(item.attrs.src));
+    return imgList;
+  }
+  getAtList(input){
+    let atList = h.select(input, 'at').map((item) => h.text(item.attrs.id));
+    return atList;
+  }
+  hasChinese(str) {
+    const regex = /[\u4e00-\u9fa5]/;
+    return regex.test(str);
+  }
+  async getAvatar64(qqId){
+    const imgUrl = `http://q.qlogo.cn/headimg_dl?dst_uin=${qqId}&spec=640`;
+    return await this.downloadImageAsBase64(imgUrl);
   }
 }
