@@ -192,9 +192,9 @@ export class GouqiBase extends Service {
       "兽人": "furry"
     }
     if (translations.hasOwnProperty(text)) {
-      return translations[text];
+      return { result: translations[text], translated: true };
     }
-    return text;
+    return { result: text, translated: false };
   }
 
 }
