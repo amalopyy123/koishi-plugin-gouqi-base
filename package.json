@@ -1,7 +1,7 @@
 {
   "name": "koishi-plugin-gouqi-base",
   "description": "一些核心方法",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [

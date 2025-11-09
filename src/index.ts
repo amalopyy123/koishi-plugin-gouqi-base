@@ -142,11 +142,11 @@ export class GouqiBase extends Service {
     // ]
     return textMerged;
   }
-  getImgList(input){
+  getImgList(input) {
     let imgList = h.select(input, 'img').map((item) => h.image(item.attrs.src));
     return imgList;
   }
-  getAtList(input){
+  getAtList(input) {
     let atList = h.select(input, 'at').map((item) => h.text(item.attrs.id));
     return atList;
   }
@@ -154,8 +154,47 @@ export class GouqiBase extends Service {
     const regex = /[\u4e00-\u9fa5]/;
     return regex.test(str);
   }
-  async getAvatar64(qqId){
+  async getAvatar64(qqId) {
     const imgUrl = `http://q.qlogo.cn/headimg_dl?dst_uin=${qqId}&spec=640`;
     return await this.downloadImageAsBase64(imgUrl);
   }
+  simpleTranslate(text) {
+    text = text.trim();
+    let translations = {
+      "女孩": "girl",
+      "男孩": "boy",
+      "猫娘": "catgirl",
+      "犬娘": "doggirl",
+      "兔女郎": "bunny girl",
+      "狐仙": "fox spirit",
+      "魅魔": "succubus",
+      "天使": "angel",
+      "恶魔": "demon",
+      "吸血鬼": "vampire",
+      "精灵": "elf",
+      "仙女": "fairy",
+      "美人鱼": "mermaid",
+      "机器人": "robot",
+      "机甲少女": "mecha girl",
+      "偶像": "idol",
+      "学生": "student",
+      "护士": "nurse",
+      "女仆": "maid",
+      "巫女": "miko",
+      "魔法少女": "magical girl",
+      "骑士": "knight",
+      "公主": "princess",
+      "女王": "queen",
+      "新娘": "bride",
+      "龙": "dragon",
+      "独角兽": "unicorn",
+      "僵尸": "zombie",
+      "兽人": "furry"
+    }
+    if (translations.hasOwnProperty(text)) {
+      return translations[text];
+    }
+    return text;
+  }
+
 }
